@@ -54,3 +54,22 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Terraform
+
+# Local .terraform directory (Terraform state plugin data)
+.terraform/
+
+# Terraform plan output
+*.tfplan
+
+# Sensitive variable definitions (if used)
+terraform.tfvars
+*.tfvars
+
+# Terraform state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# Crash log (if Terraform fails)
+crash.log
