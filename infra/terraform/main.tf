@@ -12,15 +12,13 @@ resource "aws_instance" "nestjs_app" {
   user_data = <<-EOF
               #!/bin/bash
               apt update -y
-              apt install -y curl
-              curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-              apt install -y nodejs git rsync
-              npm install -g pm2
+              apt install -y curl git docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ubuntu
               git clone https://github.com/tiagobw/projeto-devops-fase-2.git app
               cd app
-              npm install
-              npm run build
-              pm2 start dist/main.js --name nestjs-app
+              docker-compose up -d --build
               EOF
 }
 

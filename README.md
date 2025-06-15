@@ -321,8 +321,52 @@ Enter a value: `yes`
 
 Observação: O comando deve ser executado no diretório `infra/terraform`.
 
+### Deploy com Docker e Docker Compose
+
+A aplicação agora é empacotada e executada dentro de um container Docker, seguindo práticas modernas de DevOps.
+
+Arquivos adicionados:
+
+`Dockerfile`: define como a aplicação NestJS será containerizada.
+
+`docker-compose.yml`: orquestra o container da aplicação.
+
+`.dockerignore`: ignora arquivos desnecessários durante o build da imagem.
+
+#### Funcionamento no CI/CD
+
+**O pipeline do GitHub Actions foi atualizado para**:
+
+Executar `docker-compose up -d --build`, que:
+
+Constrói a imagem com base no Dockerfile.
+
+Executa o container em segundo plano.
+
+Expõe a porta 3000 da aplicação NestJS.
+
+**Benefícios da abordagem com Docker**:
+
+Facilita a portabilidade da aplicação entre ambientes.
+
+Reduz problemas de "funciona na minha máquina".
+
+Automatiza completamente o ciclo de build, deploy e execução.
+
+Alinha o projeto a padrões profissionais de DevOps.
+
+**Observação: para que as mudanças do `user_data` do `main.tf` tenham efeito, você deve:**
+
+```bash
+cd infra/terraform
+terraform destroy
+terraform apply
+```
+
 ## Objetivo do Projeto
 
-O objetivo deste projeto é demonstrar, de forma prática, a aplicação de conceitos de DevOps utilizando uma API NestJS simplificada como base para configurar pipelines de Integração Contínua (CI) e Entrega Contínua (CD) com GitHub Actions e provisionamento de infraestrutura (IaC) com Terraform na AWS.
+O objetivo deste projeto é demonstrar, de forma prática, a aplicação de conceitos de DevOps utilizando uma API NestJS simplificada como base para configurar pipelines de Integração Contínua (CI) e Entrega Contínua (CD) com GitHub Actions, e provisionamento de infraestrutura (IaC) com Terraform na AWS.
 
 A aplicação NestJS não utiliza dependências externas como banco de dados ou autenticação, mantendo o foco exclusivo em práticas de DevOps e automação de infraestrutura.
+
+Além disso, o projeto incorpora conteinerização com Docker e orquestração com Docker Compose, garantindo consistência entre ambientes de desenvolvimento, teste e produção. Essa abordagem elimina problemas de ambiente e torna o deploy mais previsível, portátil e alinhado com padrões modernos da engenharia de software.
