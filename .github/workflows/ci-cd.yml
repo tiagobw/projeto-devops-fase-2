@@ -1,0 +1,105 @@
+name: CI/CD - Infra + Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: Terraform Provision
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: infra/terraform
+    outputs:
+      ec2_ip: ${{ steps.get_ip.outputs.ec2_ip }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply (if needed)
+        run: |
+          if terraform show -no-color tfplan | grep -q "No changes"; then
+            echo "Infra já está atualizada, nada a aplicar."
+          else
+            echo "Alterações detectadas. Aplicando..."
+            terraform apply -auto-approve tfplan
+          fi
+
+      - name: Output EC2 IP
+        id: get_ip
+        run: echo "ec2_ip=$(terraform output -raw instance_public_ip)" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: terraform
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm run test
+
+      - name: Testes e2e
+        run: npm run test:e2e
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  deploy:
+    name: Deploy App
+    runs-on: ubuntu-latest
+    needs: [build, terraform]
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Preparar chave SSH
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Copiar app para EC2
+        run: |
+          scp -i key.pem -o StrictHostKeyChecking=no -r . ubuntu@${{ needs.terraform.outputs.ec2_ip }}:/home/ubuntu/app
+
+      - name: Deploy remoto
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@${{ needs.terraform.outputs.ec2_ip }} << 'EOF'
+            cd app
+            npm install
+            pm2 stop all || true
+            npm run build
+            npx pm2 start dist/main.js --name nestjs-app
+          EOF

@@ -15,11 +15,12 @@ resource "aws_instance" "nestjs_app" {
               apt install -y curl
               curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
               apt install -y nodejs git
-              git clone https://github.com/tiagobw/projeto-devops.git app
+              npm install -g pm2
+              git clone https://github.com/tiagobw/projeto-devops-fase-2.git app
               cd app
               npm install
               npm run build
-              npm run start &
+              pm2 start dist/main.js --name nestjs-app
               EOF
 }
 
